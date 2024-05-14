@@ -3,7 +3,8 @@ import {
     Tooltip,
     Button,
     Drawer,
-    Modal
+    Modal,
+    message   
 } from 'antd';
 
 import {
@@ -64,7 +65,6 @@ class ChatVideoOline extends React.Component {
         }
         this.props.sendMessage(data);
         this.videoIntervalObj = setInterval(() => {
-            console.log("video call")
             // 对方接受视频
             if (this.props.media && this.props.media.mediaConnected) {
                 this.setMediaState();
@@ -75,10 +75,12 @@ class ChatVideoOline extends React.Component {
             // 对方拒接
             if (this.props.media && this.props.media.mediaReject) {
                 this.setMediaState();
+                message.info("对方拒接")
                 return;
             }
-            this.props.sendMessage(data);
-        }, 3000)
+            // del the below code
+            // this.props.sendMessage(data);
+        }, 1000)
     }
 
     setMediaState = () => {
@@ -235,9 +237,7 @@ class ChatVideoOline extends React.Component {
                 <Modal
                     title="视频电话"
                     visible={this.state.videoCallModal}
-                    onOk={this.handleOk}
                     onCancel={this.handleCancel}
-                    okText="确认"
                     cancelText="取消"
                 >
                     <p>呼叫中...</p>

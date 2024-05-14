@@ -1,7 +1,7 @@
 const initialState = {
     userList: [],
     chooseUser: {
-        toUser: '',     // 接收方uuid
+        toUser: '',     // 接收方id
         toUsername: '', // 接收方用户名
         messageType: 1, // 消息类型，1.单聊 2.群聊
         avatar: '',     // 接收方的头像
@@ -17,7 +17,8 @@ const initialState = {
     peer: {
         localPeer: null,  // WebRTC peer 发起端
         remotePeer: null, // WebRTC peer 接收端
-    }
+    },
+    menuType: 1
 }
 
 export const types = {
@@ -27,6 +28,8 @@ export const types = {
     SOCKET_SET: 'SOCKET/SET',
     MEDIA_SET: 'MEDIA/SET',
     PEER_SET: 'PEER/SET',
+    SET_MENU: 'MENU/SET',
+    GROUP_LIST: 'GROUP/LIST',
 }
 
 export const actions = {
@@ -54,6 +57,13 @@ export const actions = {
         type: types.PEER_SET,
         peer: peer
     }),
+    setMenuType: (menuType) => ({
+        type: types.SET_MENU,
+        menuType: menuType,
+    }),
+    fetchGroupList: () => ({
+        type: types.GROUP_LIST,
+    }),
 }
 
 const PanelReducer = (state = initialState, action) => {
@@ -70,6 +80,10 @@ const PanelReducer = (state = initialState, action) => {
             return { ...state, media: action.media }
         case types.PEER_SET:
             return { ...state, peer: action.peer }
+        case types.SET_MENU:
+            return { ...state, menuType: action.menuType}
+        case types.GROUP_LIST:
+            return { ...state}
         default:
             return state
     }

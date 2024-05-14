@@ -13,13 +13,15 @@ import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { connect } from 'react-redux'
 import { actions } from '../../../redux/module/userInfo'
 import * as Params from '../../../common/param/Params'
-import { axiosGet } from '../../../util/Request';
+import {axiosGet } from '../../../util/Request';
 
-function getBase64(img, callback) {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => callback(reader.result));
-    reader.readAsDataURL(img);
-}
+// 实现用户相关功能：基本信息和切换头像等
+
+// function getBase64(img, callback) {
+//     const reader = new FileReader();
+//     reader.addEventListener('load', () => callback(reader.result));
+//     reader.readAsDataURL(img);
+// }
 
 function beforeUpload(file) {
     const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
@@ -56,11 +58,12 @@ class UserInfo extends React.Component {
      * 获取用户详情
      */
     fetchUserDetails = () => {
-        axiosGet(Params.USER_URL + localStorage.uuid)
+        axiosGet(Params.USER_URL + "/" + localStorage.user_id)
             .then(response => {
+                console.log(response)
                 let user = {
-                    ...response.data,
-                    avatar: Params.HOST + "/file/" + response.data.avatar
+                    ...response.data.user_info,
+                    // avatar: Params.HOST + "/file/" + response.data.avatar
                 }
                 this.props.setUser(user)
             });
@@ -89,22 +92,23 @@ class UserInfo extends React.Component {
         }
         if (info.file.status === 'done') {
             let response = info.file.response
-            if (response.code !== 0) {
+            console.log(response)
+            if (response.code !== 200) {
                 message.error(info.file.response.msg)
             }
 
             let user = {
                 ...this.props.user,
-                avatar: Params.HOST + "/file/" + info.file.response.data
+                avatar: response.data
             }
             this.props.setUser(user)
             // Get this url from response in real world.
-            getBase64(info.file.originFileObj, imageUrl =>
-                this.setState({
-                    imageUrl,
-                    loading: false,
-                }),
-            );
+            this.setState({
+                imageUrl: user.avatar,
+                loading: false,
+            })
+            console.log(user)
+           
         }
     };
 
@@ -146,7 +150,7 @@ class UserInfo extends React.Component {
                         action={Params.FILE_URL}
                         beforeUpload={beforeUpload}
                         onChange={this.handleChange}
-                        data={{ uuid: this.props.user.uuid }}
+                        headers={{"Authorization": Params.TOKEN_PREFIX + localStorage.token}}
                     >
                         {imageUrl ? <img src={imageUrl} alt="avatar" style={{ width: '100%' }} /> : uploadButton}
                     </Upload>

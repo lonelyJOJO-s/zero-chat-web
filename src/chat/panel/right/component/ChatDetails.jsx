@@ -5,11 +5,14 @@ import {
     List,
     Badge,
     Card,
-    Comment
+    Comment,
+    Tooltip,
 } from 'antd';
 
 import {
     MoreOutlined,
+    ManOutlined, 
+    WomanOutlined
 } from '@ant-design/icons';
 
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -73,17 +76,20 @@ class ChatDetails extends React.Component {
      * 获取群聊信息，群成员列表
      */
     chatDetails = () => {
-        axiosGet(Params.GROUP_USER_URL + this.props.chooseUser.toUser)
+        if (this.props.chooseUser.messageType === 2) { // 群聊
+            axiosGet(Params.GROUP_USER_URL + "?id=" + this.props.chooseUser.toUser)
             .then(response => {
                 if (null == response.data) {
                     return;
                 }
                 this.setState({
                     drawerVisible: true,
-                    groupUsers: response.data
+                    groupUsers: response.data.users
                 })
             });
 
+        }
+        
     }
 
     drawerOnClose = () => {
@@ -124,9 +130,17 @@ class ChatDetails extends React.Component {
                             <List.Item>
                                 <List.Item.Meta
                                     style={{ paddingLeft: 30 }}
-                                    avatar={<Avatar src={Params.HOST + "/file/" + item.avatar} />}
+                                    avatar={<Avatar src={item.avatar} />}
                                     title={item.username}
-                                    description=""
+                                    description={
+                                        <span>
+                                            {item.sex === 0 ? <ManOutlined style={{ marginRight: 8 }} /> : <WomanOutlined  style={{ marginRight: 8 }} />}
+                                            <Tooltip title={`个性签名: ${item.desc}`}>
+                                            more
+                                            </Tooltip>
+                                        </span>
+                                        
+                                    }
                                 />
                             </List.Item>
                         )}
@@ -142,6 +156,7 @@ function mapStateToProps(state) {
     return {
         chooseUser: state.panelReducer.chooseUser,
         messageList: state.panelReducer.messageList,
+        menuType: state.panelReducer.menuType,
     }
 }
 

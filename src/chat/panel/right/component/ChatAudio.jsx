@@ -77,7 +77,7 @@ class ChatAudio extends React.Component {
             // 上传文件必须将ArrayBuffer转换为Uint8Array
             let data = {
                 content: this.state.value,
-                contentType: 3,
+                contentType: 4,
                 fileSuffix: "wav",
                 file: new Uint8Array(imgData)
             }

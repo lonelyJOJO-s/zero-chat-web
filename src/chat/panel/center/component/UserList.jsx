@@ -33,45 +33,49 @@ class UserList extends React.Component {
      */
     chooseUser = (value) => {
         let chooseUser = {
-            toUser: value.uuid,
+            toUser: value.id,
             toUsername: value.username,
             messageType: value.messageType,
             avatar: value.avatar
         }
+        // 抓取消息
         this.fetchMessages(chooseUser);
-        this.removeUnreadMessageDot(value.uuid);
+        // 删除红心
+        this.removeUnreadMessageDot(value.id);
     }
 
     /**
      * 获取消息
      */
     fetchMessages = (chooseUser) => {
-        const { messageType, toUser, toUsername } = chooseUser
-        let uuid = localStorage.uuid
-        if (messageType === 2) {
-            uuid = toUser
-        }
+        const { messageType, toUser } = chooseUser
+        // let id = localStorage.id
+        // if (messageType === 2) {
+        //     id = toUser
+        // }
+        let id = toUser
         let data = {
-            Uuid: uuid,
-            FriendUsername: toUsername,
-            MessageType: messageType
+            id: id,
+            cnt: 15,
+            chat_type: messageType
         }
         axiosGet(Params.MESSAGE_URL, data)
             .then(response => {
+
                 let comments = []
-                let data = response.data
+                let data = response.data.msgs
                 if (null == data) {
                     data = []
                 }
-                for (var i = 0; i < data.length; i++) {
-                    let contentType = data[i].contentType
-                    let content = this.getContentByType(contentType, data[i].url, data[i].content)
-
+                for (var i = data.length - 1; i >= 0; i--) {
+                    let contentType = data[i].content_type
+                    let content = this.getContentByType(contentType, data[i].file, data[i].content)
+                    let unixSeconds = Math.floor(data[i].send_time / 1000000)
                     let comment = {
                         author: data[i].fromUsername,
-                        avatar: Params.HOST + "/file/" + data[i].avatar,
+                        avatar: data[i].avatar,
                         content: <p>{content}</p>,
-                        datetime: moment(data[i].createAt).fromNow(),
+                        datetime: moment(unixSeconds).fromNow(),
                     }
                     comments.push(comment)
                 }
@@ -90,13 +94,17 @@ class UserList extends React.Component {
      */
     getContentByType = (type, url, content) => {
         if (type === 2) {
-            content = <FileOutlined style={{ fontSize: 38 }} />
+            content = (<a href={url} download={content}>
+                <FileOutlined style={{ fontSize: 38 }} />
+                {content}
+            </a>
+            )
         } else if (type === 3) {
-            content = <img src={Params.HOST + "/file/" + url} alt="" width="150px" />
+            content = <img src={url} alt="" width="150px" />
         } else if (type === 4) {
-            content = <audio src={Params.HOST + "/file/" + url} controls autoPlay={false} preload="auto" />
+            content = <audio src={url} controls autoPlay={false} preload="auto" />
         } else if (type === 5) {
-            content = <video src={Params.HOST + "/file/" + url} controls autoPlay={false} preload="auto" width='200px' />
+            content = <video src={url} controls autoPlay={false} preload="auto" width='200px' />
         }
 
         return content;
@@ -104,12 +112,12 @@ class UserList extends React.Component {
 
     /**
      * 查看消息后，去掉未读提醒
-     * @param {发送给对应人员的uuid} toUuid 
+     * @param {发送给对应人员的id} toId 
      */
-    removeUnreadMessageDot = (toUuid) => {
+    removeUnreadMessageDot = (toId) => {
         let userList = this.props.userList;
         for (var index in userList) {
-            if (userList[index].uuid === toUuid) {
+            if (userList[index].id === toId) {
                 userList[index].hasUnreadMessage = false;
                 this.props.setUserList(userList);
                 break;

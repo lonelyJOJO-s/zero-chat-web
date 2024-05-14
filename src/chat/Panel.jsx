@@ -38,19 +38,15 @@ var heartCheck = {
         this.timeoutObj && clearTimeout(this.timeoutObj);
         this.serverTimeoutObj && clearTimeout(this.serverTimeoutObj);
         this.timeoutObj = setTimeout(function () {
-            //这里发送一个心跳，后端收到后，返回一个心跳消息，
-            //onmessage拿到返回的心跳就说明连接正常
             let data = {
-                type: "heatbeat",
+                type: "heartbeat",
                 content: "ping",
             }
-
             if (socket.readyState === 1) {
                 let message = protobuf.lookup("protocol.Message")
                 const messagePB = message.create(data)
                 socket.send(message.encode(messagePB).finish())
             }
-
             self.serverTimeoutObj = setTimeout(function () {
                 _num--
                 if (_num <= 0) {
@@ -66,7 +62,7 @@ var heartCheck = {
 class Panel extends React.Component {
     constructor(props) {
         super(props)
-        localStorage.uuid = props.match.params.user;
+        // localStorage.user_id = props.match.params.user;
         this.state = {
             onlineType: 1, // 在线视频或者音频： 1视频，2音频
             video: {
@@ -90,7 +86,6 @@ class Panel extends React.Component {
     componentDidMount() {
         this.connection()
     }
-
     /**
      * websocket连接
      */
@@ -98,16 +93,15 @@ class Panel extends React.Component {
         console.log("to connect...")
         peer = new RTCPeerConnection();
         var image = document.getElementById('receiver');
-        socket = new WebSocket("ws://" + Params.IP_PORT + "/socket.io?user=" + this.props.match.params.user)
-
+        socket = new WebSocket("ws://" + Params.IP_PORT + "/chat/api/v1/ws?token=" + localStorage.token)
         socket.onopen = () => {
             heartCheck.start()
             console.log("connected")
             this.webrtcConnection()
-
             this.props.setSocket(socket);
         }
         socket.onmessage = (message) => {
+            // 更新心跳包
             heartCheck.start()
 
             // 接收到的message.data,是一个blob对象。需要将该对象转换为ArrayBuffer，才能进行proto解析
@@ -116,10 +110,10 @@ class Panel extends React.Component {
             reader.readAsArrayBuffer(message.data);
             reader.onload = ((event) => {
                 let messagePB = messageProto.decode(new Uint8Array(event.target.result))
-                console.log(messagePB)
-                if (messagePB.type === "heatbeat") {
+                if (messagePB.type === "heartbeat") {
                     return;
                 }
+                console.log("receice data:", messagePB)
 
                 // 接受语音电话或者视频电话 webrtc
                 if (messagePB.type === Constant.MESSAGE_TRANS_TYPE) {
@@ -166,16 +160,17 @@ class Panel extends React.Component {
                 // }
 
                 let avatar = this.props.chooseUser.avatar
+                let author = this.props.chooseUser.username
                 if (messagePB.messageType === 2) {
-                    avatar = Params.HOST + "/file/" + messagePB.avatar
+                    // avatar = Params.HOST + "/file/" + messagePB.avatar
                 }
-
                 // 文件内容，录制的视频，语音内容
-                let content = this.getContentByType(messagePB.contentType, messagePB.url, messagePB.content)
+                console.log(messagePB.contentType, messagePB.fileBack, messagePB.content)
+                let content = this.getContentByType(messagePB.contentType, messagePB.fileBack, messagePB.content)
                 let messageList = [
                     ...this.props.messageList,
                     {
-                        author: messagePB.fromUsername,
+                        author: author,
                         avatar: avatar,
                         content: <p>{content}</p>,
                         datetime: moment().fromNow(),
@@ -216,6 +211,7 @@ class Panel extends React.Component {
                 let message = {
                     content: JSON.stringify(candidate),
                     type: Constant.MESSAGE_TRANS_TYPE,
+                    toUser: this.state.fromUserUuid,
                 }
                 this.sendMessage(message);
             }
@@ -244,20 +240,33 @@ class Panel extends React.Component {
      * @param {消息内容}} messagePB 
      */
     dealWebRtcMessage = (messagePB) => {
+        // pass for now
         if (messagePB.contentType >= Constant.DIAL_MEDIA_START && messagePB.contentType <= Constant.DIAL_MEDIA_END) {
             this.dealMediaCall(messagePB);
             return;
         }
         const { type, sdp, iceCandidate } = JSON.parse(messagePB.content);
-
         if (type === "answer") {
             const answerSdp = new RTCSessionDescription({ type, sdp });
-            this.props.peer.localPeer.setRemoteDescription(answerSdp)
+            this.props.peer.localPeer.setRemoteDescription(answerSdp).then(()=>{
+                console.log("set answer sdp successfully")
+            }).catch((error)=>{
+                console.log("set answer sdp error:", error)
+            })
         } else if (type === "answer_ice") {
             this.props.peer.localPeer.addIceCandidate(iceCandidate)
         } else if (type === "offer_ice") {
-            peer.addIceCandidate(iceCandidate)
+            // add ice network info into local conn
+            setTimeout(()=>{
+                peer.addIceCandidate(iceCandidate).then(()=> {
+                    console.log("get offer_ice and add ice candidate successfully")
+                }).catch((_error)=>{
+                    console.log("error:", _error)
+                })
+            }, 2000)
+            
         } else if (type === "offer") {
+            console.log("start to handle offer")
             if (!this.checkMediaPermisssion()) {
                 return;
             }
@@ -293,15 +302,16 @@ class Panel extends React.Component {
                         .then(() => {
                             peer.createAnswer().then(answer => {
                                 peer.setLocalDescription(answer)
-
                                 let message = {
                                     content: JSON.stringify(answer),
                                     type: Constant.MESSAGE_TRANS_TYPE,
-                                    messageType: messagePB.contentType
+                                    contentType: messagePB.contentType,
+                                    toUser: messagePB.from,
                                 }
                                 this.sendMessage(message);
                             })
                         });
+                    console.log("set remote desc successfully")
                 });
         }
     }
@@ -346,14 +356,15 @@ class Panel extends React.Component {
       */
     sendMessage = (messageData) => {
         let toUser = messageData.toUser;
-        if (null == toUser) {
+        if (null == toUser || '' === toUser) {
             toUser = this.props.chooseUser.toUser;
         }
         let data = {
             ...messageData,
-            messageType: this.props.chooseUser.messageType, // 消息类型，1.单聊 2.群聊
+            chatType: this.props.chooseUser.messageType, // 消息类型，1.单聊 2.群聊
+            from: localStorage.user_id,
             fromUsername: localStorage.username,
-            from: localStorage.uuid,
+            sendTime: Date.now(),
             to: toUser,
         }
         let message = protobuf.lookup("protocol.Message")
@@ -370,13 +381,18 @@ class Panel extends React.Component {
      */
     getContentByType = (type, url, content) => {
         if (type === 2) {
-            content = <FileOutlined style={{ fontSize: 38 }} />
+            content = (<a href={url} download={content}>
+                <FileOutlined style={{ fontSize: 38 }} />
+                {content}
+            </a>
+            )
+            // content = <FileOutlined style={{ fontSize: 38 }} />
         } else if (type === 3) {
-            content = <img src={Params.HOST + "/file/" + url} alt="" width="150px" />
+            content = <img src={url} alt="" width="150px" />
         } else if (type === 4) {
-            content = <audio src={Params.HOST + "/file/" + url} controls autoPlay={false} preload="auto" />
+            content = <audio src={url} controls autoPlay={false} preload="auto" />
         } else if (type === 5) {
-            content = <video src={Params.HOST + "/file/" + url} controls autoPlay={false} preload="auto" width='200px' />
+            content = <video src={url} controls autoPlay={false} preload="auto" width='200px' />
         }
 
         return content;
@@ -431,10 +447,10 @@ class Panel extends React.Component {
      * 如果接收到的消息不是正在聊天的消息，显示未读提醒
      * @param {发送给对应人员的uuid} toUuid 
      */
-    showUnreadMessageDot = (toUuid) => {
+    showUnreadMessageDot = (id) => {
         let userList = this.props.userList;
         for (var index in userList) {
-            if (userList[index].uuid === toUuid) {
+            if (userList[index].id === id) {
                 userList[index].hasUnreadMessage = true;
                 this.props.setUserList(userList);
                 break;
@@ -446,11 +462,17 @@ class Panel extends React.Component {
      * 接听电话后，发送接听确认消息，显示媒体面板
      */
     handleOk = () => {
+        let content_type = -1
+        if (this.state.onlineType === 1) {
+            content_type = Constant.ACCEPT_VIDEO_ONLINE
+        } else {
+            content_type = Constant.ACCEPT_AUDIO_ONLINE
+        }
         this.setState({
             videoCallModal: false,
         })
         let data = {
-            contentType: Constant.ACCEPT_VIDEO_ONLINE,
+            contentType: content_type,
             type: Constant.MESSAGE_TRANS_TYPE,
             toUser: this.state.fromUserUuid,
         }
@@ -464,17 +486,35 @@ class Panel extends React.Component {
     }
 
     handleCancel = () => {
+        let content_type = -1
+        if (this.state.onlineType === 1) {
+            content_type = Constant.REJECT_VIDEO_ONLINE
+        } else {
+            content_type = Constant.REJECT_AUDIO_ONLINE
+        }
         let data = {
-            contentType: Constant.REJECT_VIDEO_ONLINE,
+            contentType: content_type,
             type: Constant.MESSAGE_TRANS_TYPE,
+            toUser: this.state.fromUserUuid,
         }
         this.sendMessage(data);
         this.setState({
             videoCallModal: false,
+
         })
     }
 
     dealMediaCall = (message) => {
+        if (message.contentType >= Constant.DIAL_AUDIO_ONLINE && message.contentType <= Constant.REJECT_AUDIO_ONLINE) {
+            this.setState({
+                onlineType:2
+            })
+        }else {
+            this.setState({
+                onlineType:1
+            })
+        }
+
         if (message.contentType === Constant.DIAL_AUDIO_ONLINE || message.contentType === Constant.DIAL_VIDEO_ONLINE) {
             this.setState({
                 videoCallModal: true,
@@ -494,7 +534,7 @@ class Panel extends React.Component {
         if (message.contentType === Constant.REJECT_AUDIO_ONLINE || message.contentType === Constant.REJECT_VIDEO_ONLINE) {
             let media = {
                 ...this.props.media,
-                mediaReject: true,
+                mediaReject: true
             }
             this.props.setMedia(media);
             return;
@@ -510,7 +550,13 @@ class Panel extends React.Component {
     }
 
     render() {
-
+        const { onlineType } = this.state;
+        let title = ""
+        if (onlineType === 1) {
+            title = "视频电话"
+        } else {
+            title = "语音电话"
+        }
         return (
             <>
                 <Row style={{ paddingTop: 35, borderBottom: '1px solid #f0f0f0', borderTop: '1px solid #f0f0f0' }}>
@@ -551,7 +597,7 @@ class Panel extends React.Component {
                 </Drawer>
 
                 <Modal
-                    title="视频电话"
+                    title={title} 
                     visible={this.state.videoCallModal}
                     onOk={this.handleOk}
                     onCancel={this.handleCancel}

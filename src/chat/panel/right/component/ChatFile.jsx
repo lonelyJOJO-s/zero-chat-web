@@ -64,18 +64,22 @@ class ChatFile extends React.Component {
             var u8 = new Uint8Array(file);
 
             let data = {
-                content: this.state.value,
+                content: fileName,
                 contentType: 3,
                 fileSuffix: fileSuffix,
                 file: u8
             }
-            this.props.sendMessage(data)
-
             if (["jpeg", "jpg", "png", "gif", "tif", "bmp", "dwg"].indexOf(fileSuffix) !== -1) {
                 this.props.appendImgToPanel(file)
             } else {
-                this.props.appendMessage(<FileOutlined style={{ fontSize: 38 }} />)
+                let blob = new Blob([u8], { type: 'application/octet-stream' });
+                this.props.appendMessage(<a href={URL.createObjectURL(blob)} download={fileName}>
+                    <FileOutlined style={{ fontSize: 38 }} />
+                    {fileName}
+                </a>)
+                data['contentType'] = 2 // 文件
             }
+            this.props.sendMessage(data)
 
         })
         reader.readAsArrayBuffer(files[0])

@@ -3,16 +3,16 @@ import qs from 'qs'
 import {
     message
 } from 'antd';
-
+import * as Params from '../common/param/Params'
 function axiosPost(url, data, options = { dealError: false }) {
     return new Promise((resolve, reject) => {
         axios.post(url, qs.stringify(data), {
             headers: {
-                // "Authorization": Params.TOKEN_PREFIX + localStorage.token,
+                "Authorization": Params.TOKEN_PREFIX + localStorage.token,
                 'content-type': 'application/x-www-form-urlencoded'
             }
         }).then(response => {
-            if (response.data.code === 0) {
+            if (response.data.code === 200) {
                 resolve(response.data);
             } else {
                 if (options.dealError) {
@@ -31,10 +31,10 @@ function axiosPostBody(url, data, options = { dealError: false }) {
     return new Promise((resolve, reject) => {
         axios.post(url, data, {
             headers: {
-                // "Authorization": Params.TOKEN_PREFIX + localStorage.token,
+                "Authorization": Params.TOKEN_PREFIX + localStorage.token,
             }
         }).then(response => {
-            if (response.data.code === 0) {
+            if (response.data.code === 200) {
                 resolve(response.data);
             } else {
                 if (options.dealError) {
@@ -53,10 +53,10 @@ function axiosPut(url, data = {}, options = { dealError: false }) {
     return new Promise((resolve, reject) => {
         axios.put(url, data, {
             headers: {
-                // "Authorization": Params.TOKEN_PREFIX + localStorage.token
+                "Authorization": Params.TOKEN_PREFIX + localStorage.token
             }
         }).then(response => {
-            if (response.data.code === 0) {
+            if (response.data.code === 200) {
                 resolve(response.data);
             } else {
                 if (options.dealError) {
@@ -78,10 +78,10 @@ function axiosGet(url, data = {}, options = { dealError: false }) {
                 ...data,
             },
             headers: {
-                // "Authorization": Params.TOKEN_PREFIX + localStorage.token
+                "Authorization": Params.TOKEN_PREFIX + localStorage.token
             }
         }).then(response => {
-            if (response.data.code === 0) {
+            if (response.data.code === 200) {
                 resolve(response.data);
             } else {
                 if (options.dealError) {
@@ -95,5 +95,6 @@ function axiosGet(url, data = {}, options = { dealError: false }) {
         });
     });
 }
+
 
 export { axiosPost, axiosPut, axiosPostBody, axiosGet }

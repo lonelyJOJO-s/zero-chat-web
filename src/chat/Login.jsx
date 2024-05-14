@@ -4,7 +4,8 @@ import {
     Form,
     Input,
     Drawer,
-    message
+    message,
+    Radio
 } from 'antd';
 import { axiosPostBody } from './util/Request';
 import * as Params from './common/param/Params'
@@ -30,8 +31,10 @@ class Login extends React.Component {
         axiosPostBody(Params.LOGIN_URL, data)
             .then(response => {
                 message.success("登录成功！");
-                localStorage.username = response.data.username
-                this.props.history.push("panel/" + response.data.uuid)
+                localStorage.user_id = response.data.id
+                localStorage.username = values.username
+                localStorage.token = response.data.accessToken
+                this.props.history.push("panel/" + response.data.id)
             });
     };
 
@@ -52,10 +55,11 @@ class Login extends React.Component {
     }
 
     onRegister = (values) => {
+        values.sex = values.sex === 'male' ? 0 : 1;
         let data = {
             ...values
         }
-
+        console.log(data)
         axiosPostBody(Params.REGISTER_URL, data)
             .then(_response => {
                 message.success("注册成功！");
@@ -106,7 +110,7 @@ class Login extends React.Component {
 
                 </Form>
 
-                <Drawer width='500px' forceRender={true} title="注册" placement="right" onClose={this.registerDrawerOnClose} visible={this.state.registerDrawerVisible}>
+                <Drawer width='700px' forceRender={true} title="注册" placement="right" onClose={this.registerDrawerOnClose} visible={this.state.registerDrawerVisible}>
                     <Form
                         name="basic"
                         labelCol={{ span: 4 }}
@@ -132,6 +136,14 @@ class Login extends React.Component {
                         </Form.Item>
 
                         <Form.Item
+                            label="再次确认密码"
+                            name="confirm_password"
+                            rules={[{ required: true, message: '昵称!' }]}
+                        >
+                            <Input.Password />
+                        </Form.Item>
+
+                        <Form.Item
                             label="邮箱"
                             name="email"
                             rules={[{ required: true, message: '邮箱!' }]}
@@ -139,12 +151,24 @@ class Login extends React.Component {
                             <Input />
                         </Form.Item>
 
+
                         <Form.Item
-                            label="昵称"
-                            name="nickname"
-                            rules={[{ required: true, message: '昵称!' }]}
+                            label="手机号"
+                            name="phone"
+                            rules={[{ required: true, message: '手机号!' }]}
                         >
                             <Input />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="性别"
+                            name="sex"
+                            rules={[{ required: true, message: '请选择性别!' }]}
+                        >
+                            <Radio.Group>
+                                <Radio value="male">男</Radio>
+                                <Radio value="female">女</Radio>
+                            </Radio.Group>
                         </Form.Item>
 
                         <Form.Item wrapperCol={{ offset: 2, span: 6 }}>

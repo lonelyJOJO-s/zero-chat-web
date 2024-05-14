@@ -1,25 +1,29 @@
 export const API_VERSION = "/api/v1/";
 
 const PROTOCOL = "http://"
-export const IP_PORT = "localhost:8888";
+export const IP_PORT = "localhost:8081";
 //local
 export const HOST = PROTOCOL + IP_PORT;
 
-export const LOGIN_URL = HOST + '/user/login'
-export const REGISTER_URL = HOST + '/user/register'
-export const USER_URL = HOST + '/user/'
-export const USER_NAME_URL = HOST + '/user/name'
-export const USER_LIST_URL = HOST + '/user'
+export const LOGIN_URL = HOST + '/usercenter' + API_VERSION + 'user/login/username'
+export const REGISTER_URL = HOST +  '/usercenter' + API_VERSION + 'user/register'
+export const USER_URL = HOST + '/usercenter' + API_VERSION + 'user/detail'
+export const USER_SEARCH_URL = HOST + '/usercenter' + API_VERSION + 'user/search' // search users not belong to users
+export const USER_LIST_URL = HOST + '/usercenter' + API_VERSION + "user/friends"
+export const USER_FRIEND_SEARCH_URL = HOST + '/usercenter' + API_VERSION + "user/friend/search"
 
-export const USER_FRIEND_URL = HOST + '/friend'
+export const USER_FRIEND_URL = HOST + '/usercenter' + API_VERSION + 'user/friend'
 
-export const MESSAGE_URL = HOST + '/message'
+export const MESSAGE_URL = HOST + '/chat' + API_VERSION +  'history-message'
 
-export const GROUP_LIST_URL = HOST + '/group'
-export const GROUP_USER_URL = HOST + '/group/user/'
-export const GROUP_JOIN_URL = HOST + '/group/join/'
+export const GROUP_LIST_URL = HOST + '/usercenter' + API_VERSION + 'groups'
+export const GROUP_USER_URL = HOST + '/usercenter' + API_VERSION + '/group/members'
+export const GROUP_JOIN_URL = HOST + '/usercenter' + API_VERSION + 'group/join'
+export const GROUP_CREATE_URL  = HOST + '/usercenter' + API_VERSION + 'group/create'
+export const GROUP_SEARCH_JOINED_URL  = HOST + '/usercenter' + API_VERSION + 'group/search-joined'
+export const GROUP_SEARCH_All_URL  = HOST + '/usercenter' + API_VERSION + 'group/search-all'
 
-export const FILE_URL = HOST + '/file'
+export const FILE_URL = HOST +  '/usercenter' + API_VERSION + 'user/avatar'
 
 
 

@@ -2,7 +2,9 @@ import React from 'react';
 import {
     Tooltip,
     Button,
-    Drawer
+    Drawer,
+    message,
+    Modal
 } from 'antd';
 
 import {
@@ -20,6 +22,7 @@ class ChatAudioOline extends React.Component {
         super(props)
         this.state = {
             mediaPanelDrawerVisible: false,
+            audioCallModal: false,
         }
     }
 
@@ -30,6 +33,8 @@ class ChatAudioOline extends React.Component {
             localPeer: localPeer
         }
         this.props.setPeer(peer);
+        // build basic webrtc conn: send candidate
+        this.webrtcConnection();
     }
     /**
      * 开启语音电话
@@ -38,38 +43,55 @@ class ChatAudioOline extends React.Component {
         if (!this.props.checkMediaPermisssion()) {
             return;
         }
-
-        this.webrtcConnection();
-        navigator.mediaDevices
-            .getUserMedia({
-                audio: true,
-                video: false,
-            }).then((stream) => {
-                stream.getTracks().forEach(track => {
-                    localPeer.addTrack(track, stream);
-                });
-
-                // 一定注意：需要将该动作，放在这里面，即流获取成功后，再进行offer创建。不然不能获取到流，从而不能播放视频。
-                localPeer.createOffer()
-                    .then(offer => {
-                        localPeer.setLocalDescription(offer);
-                        let data = {
-                            contentType: Constant.AUDIO_ONLINE,  // 消息内容类型
-                            content: JSON.stringify(offer),
-                            type: Constant.MESSAGE_TRANS_TYPE,   // 消息传输类型
-                        }
-                        this.props.sendMessage(data);
-                    });
-            });
-
+        let media = {
+            ...this.props.media,
+            mediaConnected: false,
+        }
+        this.props.setMedia(media);
         this.setState({
-            mediaPanelDrawerVisible: true
+            audioCallModal: true,
         })
+
+        let data = {
+            contentType: Constant.DIAL_AUDIO_ONLINE,
+            type: Constant.MESSAGE_TRANS_TYPE,
+        }
+        this.props.sendMessage(data);
+        this.audioIntervalObj = setInterval(() => {
+            // 对方接受
+            console.log(this.props.media.mediaReject)
+            if (this.props.media && this.props.media.mediaConnected) {
+                this.setMediaState();
+                this.sendAudioData();
+                return;
+            }
+
+            // 对方拒接
+            if (this.props.media && this.props.media.mediaReject) {
+                this.setMediaState();
+                message.info("对方拒接")
+                return;
+            }
+        }, 1000)
+    }
+
+    setMediaState = () => {
+        this.audioIntervalObj && clearInterval(this.audioIntervalObj);
+        this.setState({
+            audioCallModal: false,
+        })
+        let media = {
+            ...this.props.media,
+            mediaConnected: false,
+            mediaReject: false,
+        }
+        this.props.setMedia(media)
     }
 
     /**
     * webrtc 绑定事件
     */
+
     webrtcConnection = () => {
 
         /**
@@ -97,6 +119,7 @@ class ChatAudioOline extends React.Component {
          * @param {包含语音视频流} e 
          */
         localPeer.ontrack = (e) => {
+            console.log("on track")
             if (e && e.streams) {
                 let remoteAudio = document.getElementById("remoteAudioPhone");
                 remoteAudio.srcObject = e.streams[0];
@@ -108,16 +131,60 @@ class ChatAudioOline extends React.Component {
      * 停止语音电话
      */
     stopAudioOnline = () => {
+        console.log("结束语音通话，需要关闭面板")
         let audioPhone = document.getElementById("remoteAudioPhone");
         if (audioPhone && audioPhone.srcObject && audioPhone.srcObject.getTracks()) {
             audioPhone.srcObject.getTracks().forEach((track) => track.stop());
         }
     }
 
+    sendAudioData = () => {
+        navigator.mediaDevices
+        .getUserMedia({
+            audio: true,
+            video: false,
+        }).then((stream) => {
+            stream.getTracks().forEach(track => {
+                localPeer.addTrack(track, stream);
+            });
+
+            // 一定注意：需要将该动作，放在这里面，即流获取成功后，再进行offer创建。不然不能获取到流，从而不能播放视频。
+            localPeer.createOffer()
+                .then(offer => {
+                    localPeer.setLocalDescription(offer);
+                    console.log("set offer into local peer", localPeer)
+                    let data = {
+                        contentType: Constant.AUDIO_ONLINE,  // 消息内容类型
+                        content: JSON.stringify(offer),
+                        type: Constant.MESSAGE_TRANS_TYPE,   // 消息传输类型
+                    }
+                    this.props.sendMessage(data);
+                });
+        }).catch(_error => {
+            console.log('error', _error);
+        });;
+
+    this.setState({
+        mediaPanelDrawerVisible: true
+    })
+    }
+
     mediaPanelDrawerOnClose = () => {
         this.setState({
             mediaPanelDrawerVisible: false
         })
+    }
+
+    handleCancel = () => {
+        this.setState({
+            audioCallModal: false,
+        })
+        let data = {
+            contentType: Constant.CANCELL_AUDIO_ONLINE,
+            type: Constant.MESSAGE_TRANS_TYPE,
+        }
+        this.props.sendMessage(data);
+        this.videoIntervalObj && clearInterval(this.videoIntervalObj);
     }
 
     render() {
@@ -153,6 +220,15 @@ class ChatAudioOline extends React.Component {
 
                     <audio id="remoteAudioPhone" autoPlay controls />
                 </Drawer>
+
+                <Modal
+                    title="语音电话"
+                    visible={this.state.audioCallModal}
+                    onCancel={this.handleCancel}
+                    cancelText="取消"
+                >
+                    <p>呼叫中...</p>
+                </Modal>
             </>
         );
     }
@@ -164,6 +240,7 @@ function mapStateToProps(state) {
         chooseUser: state.panelReducer.chooseUser,
         socket: state.panelReducer.socket,
         peer: state.panelReducer.peer,
+        media: state.panelReducer.media,
     }
 }
 

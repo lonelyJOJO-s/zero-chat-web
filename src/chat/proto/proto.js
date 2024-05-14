@@ -8,49 +8,45 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
     nested: {
       Message: {
         fields: {
-          avatar: {
-            type: "string",
-            id: 1
-          },
-          fromUsername: {
-            type: "string",
-            id: 2
-          },
           from: {
-            type: "string",
-            id: 3
-          },
-          to: {
-            type: "string",
-            id: 4
+            type: "int64",
+            id: 1
           },
           content: {
             type: "string",
-            id: 5
+            id: 2
+          },
+          sendTime: {
+            type: "int64",
+            id: 3
           },
           contentType: {
             type: "int32",
-            id: 6
+            id: 4
           },
-          type: {
-            type: "string",
-            id: 7
-          },
-          messageType: {
-            type: "int32",
-            id: 8
-          },
-          url: {
-            type: "string",
-            id: 9
-          },
-          fileSuffix: {
-            type: "string",
-            id: 10
+          to: {
+            type: "int64",
+            id: 5
           },
           file: {
             type: "bytes",
-            id: 11
+            id: 6
+          },
+          chatType: {
+            type: "int32",
+            id: 7
+          },
+          type: {
+            type: "string",
+            id: 8
+          },
+          fileBack: {
+            type: "string",
+            id: 9
+          },
+          fromUsername: {
+            type: "string",
+            id: 10
           }
         }
       }

@@ -9,44 +9,31 @@ import { actions } from '../../../redux/module/panel'
 import * as Params from '../../../common/param/Params'
 import { axiosGet } from '../../../util/Request';
 
+// 实现群聊和单聊的切换
 
 class SwitchChat extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            menuType: 1,
-        }
-    }
-
     componentDidMount() {
         this.fetchUserList();
     }
-
     /**
      * 获取好友列表
      */
     fetchUserList = () => {
-        this.setState({
-            menuType: 1,
-        })
-        let data = {
-            uuid: localStorage.uuid
-        }
-        axiosGet(Params.USER_LIST_URL, data)
+        this.props.setMenuType(1)
+        axiosGet(Params.USER_LIST_URL)
             .then(response => {
-                let users = response.data
+                let users = response.data.users
                 let data = []
                 for (var index in users) {
                     let d = {
                         hasUnreadMessage: false,
                         username: users[index].username,
-                        uuid: users[index].uuid,
+                        id: users[index].id,
                         messageType: 1,
-                        avatar: Params.HOST + "/file/" + users[index].avatar,
+                        avatar: users[index].avatar,
                     }
                     data.push(d)
                 }
-
                 this.props.setUserList(data);
             })
     }
@@ -55,20 +42,16 @@ class SwitchChat extends React.Component {
      * 获取群组列表
      */
     fetchGroupList = () => {
-        this.setState({
-            menuType: 2,
-        })
-        let data = {
-            uuid: localStorage.uuid
-        }
-        axiosGet(Params.GROUP_LIST_URL + "/" + localStorage.uuid, data)
+        this.props.setMenuType(2)
+        axiosGet(Params.GROUP_LIST_URL)
             .then(response => {
-                let users = response.data
+                let users = response.data.groups
                 let data = []
                 for (var index in users) {
                     let d = {
                         username: users[index].name,
-                        uuid: users[index].uuid,
+                        id: users[index].id,
+                        avatar: users[index].avatar,
                         messageType: 2,
                     }
                     data.push(d)
@@ -79,7 +62,7 @@ class SwitchChat extends React.Component {
     }
 
     render() {
-        const { menuType } = this.state
+        const menuType  = this.props.menuType
         return (
             <div style={{marginTop: 25}}>
                 <p >
@@ -112,12 +95,14 @@ class SwitchChat extends React.Component {
 function mapStateToProps(state) {
     return {
         user: state.userInfoReducer.user,
+        menuType: state.panelReducer.menuType,
     }
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         setUserList: (data) => dispatch(actions.setUserList(data)),
+        setMenuType: (data) => dispatch(actions.setMenuType(data)),
     }
 }
 

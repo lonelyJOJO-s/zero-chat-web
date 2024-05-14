@@ -17,7 +17,7 @@ class ChatVideo extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-
+            isRecording: false,
         }
     }
 
@@ -31,6 +31,9 @@ class ChatVideo extends React.Component {
     recorder = null;
     hasVideoPermission = true;
     startVideoRecord = (e) => {
+        this.setState({
+            isRecording: true,
+        })
         this.hasVideoPermission = true;
         navigator.getUserMedia = navigator.getUserMedia ||
             navigator.webkitGetUserMedia ||
@@ -46,7 +49,8 @@ class ChatVideo extends React.Component {
             isRecord: true
         }
         this.props.setMedia(media);
-
+        // 为什么必须要有这一句？
+        this.dataChunks = [];
         navigator.mediaDevices
             .getUserMedia({
                 audio: true,
@@ -68,6 +72,9 @@ class ChatVideo extends React.Component {
      * @param {事件} e 
      */
     stopVideoRecord = (e) => {
+        this.setState({
+            isRecording: false,
+        })
         let media = {
             isRecord: false
         }
@@ -80,21 +87,23 @@ class ChatVideo extends React.Component {
 
         let reader = new FileReader()
         reader.readAsArrayBuffer(recordedBlob)
-
+        let url = URL.createObjectURL(recordedBlob)
         reader.onload = ((e) => {
             let fileData = e.target.result
-
+            let index = url.lastIndexOf('/'), filename = ''
+            if (index >= 0) {
+                filename = url.substring(index + 1);
+            }
             // 上传文件必须将ArrayBuffer转换为Uint8Array
             let data = {
-                content: this.state.value,
-                contentType: 3,
+                content: filename + ".webm",
+                contentType: 5,
                 fileSuffix: "webm",
                 file: new Uint8Array(fileData)
             }
             this.props.sendMessage(data)
         })
-
-        this.props.appendMessage(<video src={URL.createObjectURL(recordedBlob)} controls autoPlay={false} preload="auto" width='200px' />);
+        this.props.appendMessage(<video src={url} controls autoPlay={false} preload="auto" width='200px' />);
 
         if (this.recorder) {
             this.recorder.stop()
@@ -109,16 +118,18 @@ class ChatVideo extends React.Component {
 
     render() {
         const { chooseUser } = this.props;
+        const { isRecording } = this.state;
         return (
             <>
                 <Tooltip placement="bottom" title="录制视频">
-                    <Popover content={<video id="preview" height="250px" width="auto" autoPlay muted />} title="视频">
+                    <Popover content={<video id="preview" height="250px" width="auto" autoPlay muted/>} title="视频">
                         <Button
                             shape="circle"
-                            onMouseDown={this.startVideoRecord}
-                            onMouseUp={this.stopVideoRecord}
-                            onTouchStart={this.startVideoRecord}
-                            onTouchEnd={this.stopVideoRecord}
+                            onClick={isRecording ? this.stopVideoRecord : this.startVideoRecord}
+                            // onMouseDown={this.startVideoRecord}
+                            // onMouseUp={this.stopVideoRecord}
+                            // onTouchStart={this.startVideoRecord}
+                            // onTouchEnd={this.stopVideoRecord}
                             style={{ marginRight: 10 }}
                             icon={<VideoCameraAddOutlined />}
                             disabled={chooseUser.toUser === ''}
