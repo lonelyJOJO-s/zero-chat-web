@@ -30,7 +30,7 @@ class RightIndex extends React.Component {
      * 将发送的消息追加到消息面板
      * @param {消息内容，包括图片视频消息标签} content 
      */
-    appendMessage = (content) => {
+    appendMessage = (content, contentType) => {
         let messageList = [
             ...this.props.messageList,
             {
@@ -38,6 +38,7 @@ class RightIndex extends React.Component {
                 avatar: this.props.user.avatar,
                 content: <p>{content}</p>,
                 datetime: moment().fromNow(),
+                contentType: contentType,
             },
         ];
         this.props.setMessageList(messageList);
@@ -57,7 +58,7 @@ class RightIndex extends React.Component {
         }
         let base64String = `data:image/jpeg;base64,${window.btoa(binary)}`;
 
-        this.appendMessage(<img src={base64String} alt="" width="150px" />);
+        this.appendMessage(<img src={base64String} alt="" width="150px" />, 2);
     }
 
     showMediaPanel = () => {
@@ -76,23 +77,23 @@ class RightIndex extends React.Component {
                 overflow: 'hidden',
             }}
             >
-                <ChatDetails history={this.props.history} appendMessage={this.appendMessage} />
+                <ChatDetails history={this.props.history} appendMessage={(content) => this.appendMessage(content, 1)} />
                 <br />
                 <ChatFile
                     history={this.props.history}
-                    appendMessage={this.appendMessage}
+                    appendMessage={(content) => this.appendMessage(content, 2)}
                     appendImgToPanel={this.appendImgToPanel}
                     sendMessage={this.props.sendMessage}
                 />
                 <ChatAudio
                     history={this.props.history}
-                    appendMessage={this.appendMessage}
+                    appendMessage={(content) => this.appendMessage(content, 3)}
                     sendMessage={this.props.sendMessage}
                 />
 
                 <ChatVideo
                     history={this.props.history}
-                    appendMessage={this.appendMessage}
+                    appendMessage={(content) => this.appendMessage(content, 4)}
                     sendMessage={this.props.sendMessage}
                     checkMediaPermisssion={this.props.checkMediaPermisssion}
                 />
@@ -130,7 +131,7 @@ class RightIndex extends React.Component {
 
                 <ChatEdit
                     history={this.props.history}
-                    appendMessage={this.appendMessage}
+                    appendMessage={(content) => this.appendMessage(content, 1)}
                     appendImgToPanel={this.appendImgToPanel}
                     sendMessage={this.props.sendMessage}
                 />

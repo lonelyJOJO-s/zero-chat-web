@@ -5,6 +5,8 @@ const initialState = {
         toUsername: '', // 接收方用户名
         messageType: 1, // 消息类型，1.单聊 2.群聊
         avatar: '',     // 接收方的头像
+        readIndex: 0,
+        hasMore: true,
     },
     messageList: [],
     socket: null,

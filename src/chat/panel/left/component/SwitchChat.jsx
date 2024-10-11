@@ -31,6 +31,7 @@ class SwitchChat extends React.Component {
                         id: users[index].id,
                         messageType: 1,
                         avatar: users[index].avatar,
+                        lastMessageTime: users[index].last_message_time,
                     }
                     data.push(d)
                 }
@@ -53,6 +54,7 @@ class SwitchChat extends React.Component {
                         id: users[index].id,
                         avatar: users[index].avatar,
                         messageType: 2,
+                        lastMessageTime: users[index].last_message_time,
                     }
                     data.push(d)
                 }

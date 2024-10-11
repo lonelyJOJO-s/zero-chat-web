@@ -22,6 +22,7 @@ import Right from './panel/right/index'
 import protobuf from './proto/proto'
 import { connect } from 'react-redux'
 import { actions } from './redux/module/panel'
+import {axiosGet } from './util/Request';
 
 var socket = null;
 var peer = null;
@@ -82,10 +83,22 @@ class Panel extends React.Component {
             fromUserUuid: '',
         }
     }
-
+    
     componentDidMount() {
         this.connection()
     }
+
+    fetchUserDetails = (id) => {
+        return axiosGet(Params.USER_URL + "/" + id)
+            .then(response => {
+                let user = {
+                    ...response.data.user_info,
+                    // avatar: Params.HOST + "/file/" + response.data.avatar
+                }
+                return user; // 返回 user 对象给 then 回调
+            });
+    }
+
     /**
      * websocket连接
      */
@@ -111,19 +124,36 @@ class Panel extends React.Component {
             reader.onload = ((event) => {
                 let messagePB = messageProto.decode(new Uint8Array(event.target.result))
                 if (messagePB.type === "heartbeat") {
+                    this.showUnreadMessageDot(messagePB.from);
                     return;
                 }
-                console.log("receice data:", messagePB)
-
+                // console.log(this.props.chooseUser)
+                // console.log(messagePB)
+                // console.log(this.props.messageList)
                 // 接受语音电话或者视频电话 webrtc
                 if (messagePB.type === Constant.MESSAGE_TRANS_TYPE) {
                     this.dealWebRtcMessage(messagePB);
                     return;
                 }
 
-                // 如果该消息不是正在聊天消息，显示未读提醒
-                if (this.props.chooseUser.toUser !== messagePB.from) {
-                    this.showUnreadMessageDot(messagePB.from);
+                if (this.props.chooseUser.messageType !== messagePB.chatType) {
+                    return 
+                }
+                // TODO: 需要将userList和groupList区分开来
+                // 如果该消息不是正在聊天消息，显示未读提醒(单聊)
+                if (this.props.chooseUser.messageType === 1 && this.props.chooseUser.toUser !== messagePB.from) {
+                    if (messagePB.chatType === 1) {
+                        this.showUnreadMessageDot(messagePB.from);
+                    }
+                    
+                    return;
+                }
+
+                // 如果该消息不是正在聊天消息，显示未读提醒(群聊)
+                if (this.props.chooseUser.messageType === 2 && this.props.chooseUser.toUser !== messagePB.to) {
+                    if (messagePB.chatType === 2) {
+                        this.showUnreadMessageDot(messagePB.to);
+                    }
                     return;
                 }
 
@@ -154,29 +184,47 @@ class Panel extends React.Component {
                 }
 
                 // // 接受语音电话或者视频电话 webrtc
-                // if (messagePB.type === Constant.MESSAGE_TRANS_TYPE) {
-                //     this.dealWebRtcMessage(messagePB);
-                //     return;
-                // }
-
-                let avatar = this.props.chooseUser.avatar
-                let author = this.props.chooseUser.username
-                if (messagePB.messageType === 2) {
-                    // avatar = Params.HOST + "/file/" + messagePB.avatar
+                if (messagePB.type === Constant.MESSAGE_TRANS_TYPE) {
+                    this.dealWebRtcMessage(messagePB);
+                    return;
                 }
-                // 文件内容，录制的视频，语音内容
-                console.log(messagePB.contentType, messagePB.fileBack, messagePB.content)
+
                 let content = this.getContentByType(messagePB.contentType, messagePB.fileBack, messagePB.content)
-                let messageList = [
-                    ...this.props.messageList,
-                    {
-                        author: author,
-                        avatar: avatar,
-                        content: <p>{content}</p>,
-                        datetime: moment().fromNow(),
-                    },
-                ];
-                this.props.setMessageList(messageList);
+                
+                // 群聊消息
+                if (messagePB.chatType === 2) {
+                    this.fetchUserDetails(messagePB.from).then(user => {
+                        let messageList = [
+                            ...this.props.messageList,
+                            {
+                                author: user.username,
+                                avatar: user.avatar,
+                                content: <p>{content}</p>,
+                                datetime: moment().fromNow(),
+                                contentType: messagePB.contentType,
+                            },
+                        ];
+                        this.props.setMessageList(messageList);
+                        
+                    });
+                    return 
+                }
+                if (messagePB.chatType === 1) {
+                    let messageList = [
+                        ...this.props.messageList,
+                        {
+                            author: this.props.chooseUser.username,
+                            avatar: this.props.chooseUser.avatar,
+                            content: <p>{content}</p>,
+                            datetime: moment().fromNow(),
+                            contentType: messagePB.contentType,
+                        },
+                    ];
+                    this.props.setMessageList(messageList);
+                    return 
+                } 
+                // 单聊
+                
             })
         }
 
@@ -448,10 +496,18 @@ class Panel extends React.Component {
      * @param {发送给对应人员的uuid} toUuid 
      */
     showUnreadMessageDot = (id) => {
-        let userList = this.props.userList;
-        for (var index in userList) {
+        //
+        let userList = [...this.props.userList]; // 创建userList的副本，避免直接修改 props
+        for (let index in userList) {
             if (userList[index].id === id) {
+                // 标记该用户有未读消息
                 userList[index].hasUnreadMessage = true;
+
+                // 将该用户移到列表开头
+                const [userWithUnread] = userList.splice(index, 1); // 从原位置移除该用户
+                userList.unshift(userWithUnread); // 将其放到列表的最前面
+
+                // 更新用户列表
                 this.props.setUserList(userList);
                 break;
             }

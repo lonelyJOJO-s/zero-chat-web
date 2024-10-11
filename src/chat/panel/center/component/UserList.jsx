@@ -36,7 +36,9 @@ class UserList extends React.Component {
             toUser: value.id,
             toUsername: value.username,
             messageType: value.messageType,
-            avatar: value.avatar
+            avatar: value.avatar,
+            readIndex: 0,
+            hasMore: true,
         }
         // 抓取消息
         this.fetchMessages(chooseUser);
@@ -48,20 +50,17 @@ class UserList extends React.Component {
      * 获取消息
      */
     fetchMessages = (chooseUser) => {
-        const { messageType, toUser } = chooseUser
-        // let id = localStorage.id
-        // if (messageType === 2) {
-        //     id = toUser
-        // }
+        const { messageType, toUser, readIndex } = chooseUser
+        console.log(readIndex)
         let id = toUser
         let data = {
             id: id,
             cnt: 15,
-            chat_type: messageType
+            chat_type: messageType,
+            offset: readIndex,
         }
         axiosGet(Params.MESSAGE_URL, data)
             .then(response => {
-
                 let comments = []
                 let data = response.data.msgs
                 if (null == data) {
@@ -76,10 +75,11 @@ class UserList extends React.Component {
                         avatar: data[i].avatar,
                         content: <p>{content}</p>,
                         datetime: moment(unixSeconds).fromNow(),
+                        contentType: contentType,
                     }
                     comments.push(comment)
                 }
-
+                chooseUser.readIndex = response.data.next_read_index
                 this.props.setMessageList(comments);
                 // 设置选择的用户信息时，需要先设置消息列表，防止已经完成了滑动到底部动作后，消息才获取完成，导致消息不能完全滑动到底部
                 this.props.setChooseUser(chooseUser);
@@ -125,6 +125,12 @@ class UserList extends React.Component {
         }
     }
 
+    formatTimestamp = (timestamp) => {
+        console.log(timestamp)
+        const date = new Date(timestamp * 1000); // 创建 Date 对象
+        return date.toISOString().slice(0, 19).replace("T", " "); // 格式化为字符串，例如：2023-10-11 10:00:00
+    }
+
     render() {
 
         return (
@@ -147,7 +153,7 @@ class UserList extends React.Component {
                                         onClick={() => this.chooseUser(item)}
                                         avatar={<Badge dot={item.hasUnreadMessage}><Avatar src={item.avatar} /></Badge>}
                                         title={item.username}
-                                        description=""
+                                        description={this.formatTimestamp(item.lastMessageTime)}
                                     />
                                 </List.Item>
                             )}

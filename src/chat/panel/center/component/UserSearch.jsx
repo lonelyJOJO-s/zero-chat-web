@@ -54,6 +54,7 @@ class UserSearch extends React.Component {
                         id: users[index].id,
                         messageType: 1,
                         avatar: users[index].avatar,
+                        lastMessageTime: users[index].last_message_time,
                     }
                     data.push(d)
                 }
@@ -72,6 +73,7 @@ class UserSearch extends React.Component {
                         id: users[index].id,
                         avatar: users[index].avatar,
                         messageType: 2,
+                        lastMessageTime: users[index].last_message_time,
                     }
                     data.push(d)
                 }
@@ -107,6 +109,7 @@ class UserSearch extends React.Component {
                         avatar: user.avatar,
                         id: user.id,
                         messageType: 1,
+                        lastMessageTime: users.last_message_time,
                     }));
                     this.props.setUserList(queryUsers);
                 });
@@ -127,6 +130,7 @@ class UserSearch extends React.Component {
                         avatar: group.avatar,
                         id: group.id,
                         messageType: 2,
+                        lastMessageTime: group.last_message_time,
                     }));
                     this.props.setUserList(queryUsers);
                 });
@@ -210,6 +214,7 @@ class UserSearch extends React.Component {
                 this.setState({
                     hasUser: false
                 });
+                this.fetchUserList()
             });
     };
     // todo
@@ -222,6 +227,7 @@ class UserSearch extends React.Component {
                 this.setState({
                     hasGroup: false
                 });
+                this.fetchGroupList()
             });
     }
 
@@ -263,7 +269,8 @@ class UserSearch extends React.Component {
                 this.setState({
                     showCreateGroup: false
                 });
-            });
+                this.fetchGroupList()
+            }); 
     }
 
     ChooseUser = (user) => {
