@@ -84,11 +84,7 @@ function axiosGet(url, data = {}, options = { dealError: false }) {
             if (response.data.code === 200) {
                 resolve(response.data);
             } else {
-                if (options.dealError) {
-                    reject(response);
-                } else {
-                    message.error(response.data.msg);
-                }
+                reject(response);
             }
         }).catch(_error => {
             message.error('网络错误，请稍候再试！');

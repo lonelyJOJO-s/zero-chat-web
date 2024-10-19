@@ -18,6 +18,7 @@ import ChatVideo from './component/ChatVideo';
 import ChatShareScreen from './component/ChatShareScreen';
 import ChatAudioOline from './component/ChatAudioOline';
 import ChatVideoOline from './component/ChatVideoOline';
+import ChatHistory from './component/ChatHistory';
 import ChatEdit from './component/ChatEdit';
 
 import moment from 'moment';
@@ -114,6 +115,9 @@ class RightIndex extends React.Component {
                     history={this.props.history}
                     sendMessage={this.props.sendMessage}
                     checkMediaPermisssion={this.props.checkMediaPermisssion}
+                />
+                <ChatHistory
+
                 />
 
                 <Tooltip title="显示视频面板">

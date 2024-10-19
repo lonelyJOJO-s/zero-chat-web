@@ -1,7 +1,7 @@
 export const API_VERSION = "/api/v1/";
 
 const PROTOCOL = "http://"
-export const IP_PORT = "lab-4090:8088";
+export const IP_PORT = "10.87.81.207:8088";
 //local
 export const HOST = PROTOCOL + IP_PORT;
 
@@ -15,6 +15,7 @@ export const USER_FRIEND_SEARCH_URL = HOST + '/usercenter' + API_VERSION + "user
 export const USER_FRIEND_URL = HOST + '/usercenter' + API_VERSION + 'user/friend'
 
 export const MESSAGE_URL = HOST + '/chat' + API_VERSION +  'history-message'
+export const MESSAGE_SEARCH_URL = HOST + '/chat' + API_VERSION + '/history-message/search'
 
 export const GROUP_LIST_URL = HOST + '/usercenter' + API_VERSION + 'groups'
 export const GROUP_USER_URL = HOST + '/usercenter' + API_VERSION + '/group/members'
